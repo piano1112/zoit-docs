@@ -1,0 +1,6 @@
+*.o
+server
+client
+doc.md
+FIFO_C2S_*
+FIFO_S2C_*

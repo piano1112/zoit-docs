@@ -1,0 +1,75 @@
+10b842fb43ad07d553d1480fb9edf4d0521f901c feat: LOG?
+1079062d0d8ef8c9245c86e26eebb22ebf5ba5df feat: added DOC?
+fecbde198c0a20ae903a167b2d8a702ff0672f8d refactor: markdown.c
+eec27efa88e4f95a0d25cc3babd25b55732bb93a chore: References.zip
+d748c6a2fe934679a4bc965633fe0d506f882553 chore: filled Makefile
+421454d50adbbbc89fea65a4b109f1ef18637e9b Loaded latest markdown.h
+768f46afd801e61d3863e74b7e4d9f7b4b343554 fix: debugging versioning
+7d08eee4a61b68bedcc70a56198985e91b231ddf feat: implemented heading
+a70c14e661e261f8dd31689b3c8ecf4429bf880c fix: debugging versioning
+cf00288aadddcedf278f1387cc7777c0c3a9390d fix: debugging versioning
+f92be8552f44890cfecb24c85bbb9a7daff82e0f feat: implemented newline
+619dbe5367a52660fab16dece59b5c5a9c7e8ac3 feat: enabled basic insert
+6f4361cc4e3e230c5101bb21b48dc9bfe7cc8889 feat: added DOC? and PERM?
+7d2a0037cfb713c084be80eb108671e4e8d6a691 fix: error in server tests
+7d422aa3c273b175dfa05169c88ad405b068cc37 fix: error in server tests
+b219658ea85e9860d6fdc13fcd35bc713dc40160 feat: added command.h file
+c5918fdd020efa962b5d5fd0c76c7288cbf22eac feat: implemented client.c
+d041478aa213de3298189943be013ba2e36eaf33 feat: added command.c file
+ff382dc7b367dcb007cc5f7b40f6e6d5af54c2f6 feat: added unordered list
+21363274b533742ecaa5391f48afe9cca33f6ec9 fix: debugging basic_delete
+7e9b2fb5e46194dbbb29fa6d683513d230cd7865 fix: debugging link feature
+fae9f95f2f614bde193912fb1199d81526b21311 fix: errors in client tests
+fc05b854a4016835a172b9eddb76f872b96d55e0 fix: debugging basic_delete
+7a24304eb29ed1dcc0aa8da246d0e3a0af08b718 fix: ordering in orderedlist
+7402b07487dbe5cf886cdd76daedfc9598d09fe3 chore: added source/document.c
+b6299e335537572d535cf9acbdd22ef42abdb59b fix: constant error in client.c
+e54ed3c6dd0dc80e10f82215680832460ed5a3c7 fix: server test authentication
+78c1c6b774999326cae49f323a4071b9e73abfc9 fix:reworking markdown structure
+974a65510938e7b46318eb601423e3e638a54f92 fix: Reject error and delete bug
+9840f82b45aa0241289e32cc18b7eb3969010417 chore: pushing all changed files
+c701451d62a580b4ddba4c69cc4b708bab30df15 feat: server_test_authentication
+d2d71f05b4e091b72fb5f50d30f003032b7c89ff feat: invalid position rejection
+11440748109f36fb3b090c8d244101d948fa32f5 fix: ASAN error in basic_deferred
+322511946af8b976aad90e80c0f901e0f68caaf9 feat: added main loop in server.c
+5a1ac962e5722c2d7cf27b7f1f92bf16b1f4fd39 fix: Makefile multiple definition
+ab89d83be235d1418bb8bf5281d7504e48b636f8 Implemented part of parse_command
+d5bbbb6de4c56d74dd8dbc00b96aaaf4d2152fa1 fix: debugging client test errors
+002188df7425ab731a5d61ce9abb3a8ef44ec94e refactor: markdown, server, client
+167769f145420bacdca4966fb3538538379416ca fix: correct document transmission
+b13a919ba3695a71522b78044dbff699eaf1cbfa feat: added bold and italic markdown
+353a303d7c89dae7d07435d17cb069262d73bb00 feat: implemented remaining markdowns
+75925e5543b93047e0b5e9f7945d5aa0a4d845c5 fix: debugging client test LOG? issue
+f79f670d207988d2ab7c79d7a40f5a3f535a8c70 fix: trying to fix linking test error
+61d33ee47602dca41a0d8c6942f46b6f2dfbcb26 feat: added saving document into doc.md
+df5e7c82e13945c1f2c0d7dc45c10e5eaf71f644 fix: added missing variable declaration
+89ffaa1c78eae64cfb39cf7613bd9e817955d8d2 fix: heap-buffer-overflow in client tests
+8d8d336c0d35b42da68c6172216e07cba1e75685 fix: fixed markdown.c to match markdown.h
+b920d2cc1955b64e59b96111cc901a9e2be3fbcf refacor: document.h, document.c, source.c
+bbbba886045b10bb051a6a742e4cc8f9b318f7d7 fix: debugging ASAN error in basic insert
+e499911b67ca352b930e4e5603bcce498a02ce13 fix: debugging ASAN error in basic insert
+f665f6d756fd787ba19bd59dfad764c6389d0f57 fix: heap-buffer-overflow in client tests
+fe92680cd669405245964243f41cd4a934a0390e fix: heap-buffer-overflow in client tests
+3666ac5f2066a399f370f9693cdd76354e5a5ec3 feat: implemented markdown print and flatten
+68347c457db76166ba67732b564750e8d02cd893 feat: implementing deferred commit semantics
+9a2f0ddeb1f759f06e06f61f932d823e8c6997bb feat: implemented client handler in server.c
+4e7cb95045b5be48b2ef0c1ef99f9bae15c3c2f7 fix: test_super_complex_formatting SEGV error
+a79e348811fbac1e5fa54f7f43c2a36531cfb0b0 chore: implemented chunk and document structs
+b7034d81a0e091b346b6a7ab4c984acba1cdeb2c fix: fixing build error by modifying Makefile
+dcc0d8a9c3be3b0d2d29dc2ebb2492f04b82a154 fix: test_super_complex_formatting SEGV error
+e06e1d9cbf8e6ba02df54e62b681afca5d4eedea fix: test_super_complex_formatting SEGV error
+dca6e2babb97ee244d8a69db974d46a8eeb3a5b3 feat: implemented helper functions in server.c
+85cd0c3b0bb13a2ac14193f72c0d333ffa799b92 fix: fixing build error by modifying markdown.c
+3c22834f42287957745f3013a6595f9822089aa9 feat: implemented markdown_init and markdown_free
+96f5f36dfada5972174e353d905594a1b5a206d7 chore: uploading correct version of References.zip
+db404db72793b882a0464afc3534848bbe9a269c chore: added main functions to client.c and server.c
+08ddc60a40ee6dfb8b56b95be1bc57dec6ca6c24 refactor: command.h, document.h, command.c and server.c
+0c26323ed74be8428b8604c4ec10d1614518c096 refactor: command.h, document.h, command.c and server.c
+6e16d087b49a44a28ccd190836a4dfafe43056c2 feat: added role struct and shared variables to server.c
+9afa077c3c1bd0a38773137a73c216fd1cab8b98 feat: implemented document helper functions in document.c
+0a66c2198067dccdcfdbd230679a4b5970837576 fix: fixed warnings of 'make' for document.h and document.c
+b9773b73109c61d06ed650fa283cbe3514bdea9c fix: trying to fix linking error of markdown.o in build step
+fffd7c4a5374583af85131764b76bb880ffbccd2 chore: declared helper functions for document data structure
+76063ae8f31f1f3ec569b55dd6eb296568c8132d fix: fixing build error by modifying command.h and markdown.h
+cb6e95d84031b6dfcd2ebd7c8f1a5c55a56f093c feat: implemented markdown_insert, delete and increment_version
+e8fbdd96d5c5bb65b38136ea337021afad266b8d fix: fixed Makefile to create object files in home (p2) directory

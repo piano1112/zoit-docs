@@ -13,8 +13,10 @@
 int fd_s2c;
 int fd_c2s;
 char *log_ = NULL;
+char user_perm[16] = "read";
 
 // Thread function
+static int first_response = 1;
 void *server_reader(void *arg) {
     (void)arg;  
     while (1) {
@@ -27,6 +29,20 @@ void *server_reader(void *arg) {
             break;
         }
         line[len] = '\0';
+
+        // Parse permission from first server response
+        if (first_response) {
+            first_response = 0;
+            // First line is the permission
+            char *newline = strchr(line, '\n');
+            if (newline) {
+                size_t perm_len = newline - line;
+                if (perm_len < sizeof(user_perm)) {
+                    memcpy(user_perm, line, perm_len);
+                    user_perm[perm_len] = '\0';
+                }
+            }
+        }
         // append to log (reallocate if needed)
         size_t log_len = strlen(log_);
         size_t new_len = log_len + len + 1;
@@ -135,7 +151,7 @@ int main(int argc, char *argv[]) {
             continue;
         } else if (strncmp(line, "PERM?", 5) == 0) {
             // print document permission
-            puts("write");
+            puts(user_perm);
             continue;
         } 
         // Send command to server

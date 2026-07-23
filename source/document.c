@@ -153,6 +153,7 @@ int document_delete_range(document *doc, size_t pos, size_t len) {
     size_t total = document_length(doc);
     if (pos > total) return -1;
     size_t end_pos = pos + len;
+    if (end_pos > total) end_pos = total;
     chunk *start = doc->head;
     size_t idx = 0;
 
@@ -187,7 +188,7 @@ int document_delete_range(document *doc, size_t pos, size_t len) {
     chunk *after = NULL;
     if (end) {
         if (local_end > 0) {
-            after = chunk_split(end, local_end);
+            chunk_split(end, local_end);
             after = end->next;
         } else {
             after = end;
@@ -397,20 +398,22 @@ void document_delete_marked(document *doc) {
 }
 
 int determine_order(document *doc, size_t pos) {
-    if (!doc) return -1;
-    // search previous "n. " in document before pos
-    size_t prev_order = 0;
-    size_t idx = 0;
-    chunk *c = doc->head;
-    while (c && idx + c->length <= pos) {
-        idx += c->length;
-        // check if this chunk is "n. " e.g. 1. , 2. , 3. , ...
-        if (c->length == 3 && c->text[1] == '.' && c->text[2] == ' ') {
-            // convert c->text[0] to integer
+    if (!doc || pos == 0) return 1;
+    // Read text before pos and find the last "n. " pattern after a newline
+    char *text = document_read(doc, 0, pos);
+    if (!text) return 1;
+    int prev_order = 0;
+    for (size_t i = 0; i < pos; i++) {
+        // "n. " pattern must be at start of text or after a newline
+        if (i == 0 || text[i - 1] == '\n') {
             char *endptr;
-            prev_order = (int) strtol(c->text, &endptr, 10);
+            long val = strtol(text + i, &endptr, 10);
+            if (endptr != text + i && *endptr == '.' &&
+                (size_t)(endptr - text) + 1 < pos && *(endptr + 1) == ' ') {
+                prev_order = (int)val;
+            }
         }
-        c = c->next;
     }
+    free(text);
     return prev_order + 1;
 }

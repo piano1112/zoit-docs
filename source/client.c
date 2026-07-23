@@ -144,6 +144,7 @@ int main(int argc, char *argv[]) {
             len++;
         }
         if (strncmp(line, "LOG?", 4) == 0) {
+            puts(log_);
             continue;
         } else if (strncmp(line, "DOC?", 4) == 0) {
             // print document content

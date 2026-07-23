@@ -33,6 +33,7 @@ typedef struct client {
     pid_t                pid;
     int                  fd_s2c;
     char                *username;
+    role_perm            perm;
     struct client       *next;
 } client;
 
@@ -182,6 +183,7 @@ void *client_handler(void *arg) {
     c->pid = client_pid;
     c->fd_s2c = fd_s2c;
     c->username = strdup(ubuf);
+    c->perm = r->perm;
     pthread_mutex_lock(&clients_mutex);
     c->next = clients;
     clients = c;
@@ -261,6 +263,43 @@ void *broadcast_thread(void *arg) {
         pthread_mutex_lock(&commands_mutex);
         if (doc->commands) {
             markdown_increment_version(doc);
+
+            // Broadcast updated document to all connected clients
+            char *content = markdown_flatten(doc);
+            size_t doc_len = document_length(doc);
+
+            pthread_mutex_lock(&clients_mutex);
+            for (client *c = clients; c; c = c->next) {
+                const char *perm_str = (c->perm == ROLE_WRITE) ? "write" : "read";
+                int header_len = snprintf(
+                    NULL, 0,
+                    "%s\n%" PRIu64 "\n%zu\n",
+                    perm_str,
+                    doc->version,
+                    doc_len
+                );
+                size_t total_len = (size_t)header_len + doc_len;
+                char *buf = malloc(total_len + 1);
+                snprintf(
+                    buf,
+                    header_len + 1,
+                    "%s\n%" PRIu64 "\n%zu\n",
+                    perm_str,
+                    doc->version,
+                    doc_len
+                );
+                memcpy(buf + header_len, content, doc_len);
+                size_t sent = 0;
+                while (sent < total_len) {
+                    ssize_t w = write(c->fd_s2c, buf + sent, total_len - sent);
+                    if (w <= 0) break;
+                    sent += (size_t)w;
+                }
+                free(buf);
+            }
+            pthread_mutex_unlock(&clients_mutex);
+
+            free(content);
         }
         pthread_mutex_unlock(&commands_mutex);
         

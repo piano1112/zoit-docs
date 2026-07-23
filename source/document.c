@@ -163,7 +163,6 @@ int document_delete_range(document *doc, size_t pos, size_t len) {
     }
     if (!start) return 0; // nothing to delete
     size_t local_start = pos > idx ? pos - idx : 0;
-    printf("local_start: %zu\n", local_start);
 
     // locate end boundary
     chunk *end = doc->head;
@@ -173,7 +172,6 @@ int document_delete_range(document *doc, size_t pos, size_t len) {
         end = end->next;
     }
     size_t local_end = end_pos > idx2 ? end_pos - idx2 : 0;
-    printf("local_end: %zu\n", local_end);
 
     // split at start
     if (local_start > 0) {

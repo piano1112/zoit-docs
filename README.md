@@ -86,6 +86,7 @@ Type `QUIT` in the server terminal. The server waits for all clients to disconne
 ## Technical Details
 
 - **IPC via named FIFOs**: Each client gets two FIFOs (`FIFO_C2S_<pid>` and `FIFO_S2C_<pid>`) for bidirectional communication, created and cleaned up automatically
-- **Signal-driven registration**: Clients send `SIGRTMIN` to the server to initiate connection; the server responds with `SIGRTMIN+1` after creating the FIFOs
+- **Signal-driven registration**: Clients send `SIGRTMIN` (or `SIGUSR1` on macOS) to the server to initiate connection; the server responds after creating the FIFOs
 - **Chunk-based document**: Text is stored as a linked list of chunks that can be split and merged at arbitrary positions, enabling efficient mid-document insertions and deletions without copying the entire buffer
 - **Thread safety**: All document mutations and client list modifications are protected by pthread mutexes
+- **Cross-platform**: Builds on both Linux and macOS with automatic signal compatibility

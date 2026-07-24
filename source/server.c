@@ -16,6 +16,14 @@
 #include "../libs/command.h"
 #include "../libs/markdown.h"
 
+#ifndef SIGRTMIN
+#define SIG_REGISTER SIGUSR1
+#define SIG_ACK      SIGUSR2
+#else
+#define SIG_REGISTER SIGRTMIN
+#define SIG_ACK      (SIGRTMIN + 1)
+#endif
+
 typedef enum role_perm {
     ROLE_READ,
     ROLE_WRITE
@@ -51,7 +59,7 @@ void *client_handler(void *arg);
 void *broadcast_thread(void *arg);
 void setup_signal_handler(void);
 
-// SIGRTMIN handler spawns a thread to handle a new client
+// SIG_REGISTER handler spawns a thread to handle a new client
 void sig_rtmin_handler(int signo, siginfo_t *info, void *ucontext) {
     (void)signo; (void)ucontext;
     pid_t sender = info->si_pid;
@@ -70,15 +78,15 @@ void sig_rtmin_handler(int signo, siginfo_t *info, void *ucontext) {
     pthread_detach(tid);
 }
 
-// Register handler for SIGRTMIN using sigaction
+// Register handler for SIG_REGISTER using sigaction
 void setup_signal_handler(void) {
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
     sa.sa_sigaction = sig_rtmin_handler;
     sa.sa_flags = SA_SIGINFO | SA_RESTART;
     sigemptyset(&sa.sa_mask);
-    if (sigaction(SIGRTMIN, &sa, NULL) == -1) {
-        perror("sigaction(SIGRTMIN)");
+    if (sigaction(SIG_REGISTER, &sa, NULL) == -1) {
+        perror("sigaction(SIG_REGISTER)");
         exit(EXIT_FAILURE);
     }
 }
@@ -94,10 +102,10 @@ role *find_role(const char *username) {
 
 void *client_handler(void *arg) {
 
-    // Block SIGRTMIN before any threads
+    // Block SIG_REGISTER before any threads
     sigset_t mask;
     sigemptyset(&mask);
-    sigaddset(&mask, SIGRTMIN);
+    sigaddset(&mask, SIG_REGISTER);
     if (pthread_sigmask(SIG_BLOCK, &mask, NULL) == -1) {
         perror("sigprocmask(SIG_BLOCK)");
         exit(EXIT_FAILURE);
@@ -118,8 +126,8 @@ void *client_handler(void *arg) {
     }
 
     // Notify client
-    if (kill(client_pid, SIGRTMIN+1) == -1) {
-        perror("kill(SIGRTMIN+1)");
+    if (kill(client_pid, SIG_ACK) == -1) {
+        perror("kill(SIG_ACK)");
     }
 
     int fd_c2s = open(fifo_c2s, O_RDONLY);
@@ -244,10 +252,10 @@ void load_roles(const char *path) {
 
 void *broadcast_thread(void *arg) {
 
-    // Block SIGRTMIN before any threads
+    // Block SIG_REGISTER before any threads
     sigset_t mask;
     sigemptyset(&mask);
-    sigaddset(&mask, SIGRTMIN);
+    sigaddset(&mask, SIG_REGISTER);
     if (pthread_sigmask(SIG_BLOCK, &mask, NULL) == -1) {
         perror("sigprocmask(SIG_BLOCK)");
         exit(EXIT_FAILURE);

@@ -10,6 +10,14 @@
 #include <stdint.h>
 #include <inttypes.h>
 
+#ifndef SIGRTMIN
+#define SIG_REGISTER SIGUSR1
+#define SIG_ACK      SIGUSR2
+#else
+#define SIG_REGISTER SIGRTMIN
+#define SIG_ACK      (SIGRTMIN + 1)
+#endif
+
 int fd_s2c;
 int fd_c2s;
 char *log_ = NULL;
@@ -70,22 +78,22 @@ int main(int argc, char *argv[]) {
     char *username = argv[2];
     pid_t client_pid = getpid();
 
-    // Block SIGRTMIN+1 to use sigwait
+    // Block SIG_ACK to use sigwait
     sigset_t mask;
     sigemptyset(&mask);
-    sigaddset(&mask, SIGRTMIN + 1);
+    sigaddset(&mask, SIG_ACK);
     if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1) {
         perror("sigprocmask");
         return EXIT_FAILURE;
     }
 
-    // Send SIGRTMIN to server to register
-    if (kill(server_pid, SIGRTMIN) == -1) {
-        perror("kill(SIGRTMIN)");
+    // Send SIG_REGISTER to server to register
+    if (kill(server_pid, SIG_REGISTER) == -1) {
+        perror("kill(SIG_REGISTER)");
         return EXIT_FAILURE;
     }
 
-    // Wait for SIGRTMIN+1 acknowledgment
+    // Wait for SIG_ACK acknowledgment
     int sig;
     if (sigwait(&mask, &sig) != 0) {
         perror("sigwait");

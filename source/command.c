@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 #include "../libs/command.h"
 
 command *command_init(void){
@@ -29,40 +30,40 @@ void command_print(command *cmd) {
     printf("EDIT %s ", cmd->username);
     switch (cmd->type) {
         case INSERT:
-            printf("INSERT %lu %s", cmd->pos, cmd->content);
+            printf("INSERT %" PRIu64 " %s", cmd->pos, cmd->content);
             break;
         case DEL:
-            printf("DEL %lu %lu", cmd->pos, cmd->no_char);
+            printf("DEL %" PRIu64 " %" PRIu64 "", cmd->pos, cmd->no_char);
             break;
         case NEWLINE:
-            printf("NEWLINE %lu", cmd->pos);
+            printf("NEWLINE %" PRIu64 "", cmd->pos);
             break;
         case HEADING:
-            printf("HEADING %lu %lu", cmd->level, cmd->pos);
+            printf("HEADING %" PRIu64 " %" PRIu64 "", cmd->level, cmd->pos);
             break;
         case BOLD:
-            printf("BOLD %lu %lu", cmd->start_pos, cmd->end_pos);
+            printf("BOLD %" PRIu64 " %" PRIu64 "", cmd->start_pos, cmd->end_pos);
             break;
         case ITALIC:
-            printf("ITALIC %lu %lu", cmd->start_pos, cmd->end_pos);
+            printf("ITALIC %" PRIu64 " %" PRIu64 "", cmd->start_pos, cmd->end_pos);
             break;
         case UNORDERED_LIST:
-            printf("UNORDERED_LIST %lu", cmd->pos);
+            printf("UNORDERED_LIST %" PRIu64 "", cmd->pos);
             break;
         case BLOCKQUOTE:
-            printf("BLOCKQUOTE %lu", cmd->pos);
+            printf("BLOCKQUOTE %" PRIu64 "", cmd->pos);
             break;
         case CODE:
-            printf("CODE %lu %lu", cmd->start_pos, cmd->end_pos);
+            printf("CODE %" PRIu64 " %" PRIu64 "", cmd->start_pos, cmd->end_pos);
             break;
         case HORIZONTAL_RULE:
-            printf("HORIZONTAL_RULE %lu", cmd->pos);
+            printf("HORIZONTAL_RULE %" PRIu64 "", cmd->pos);
             break;
         case ORDERED_LIST:
-            printf("ORDERED_LIST %lu", cmd->pos);
+            printf("ORDERED_LIST %" PRIu64 "", cmd->pos);
             break;
         case LINK:
-            printf("LINK %lu %lu %s", cmd->start_pos, cmd->end_pos, cmd->link);
+            printf("LINK %" PRIu64 " %" PRIu64 " %s", cmd->start_pos, cmd->end_pos, cmd->link);
             break;
         default:
             break;

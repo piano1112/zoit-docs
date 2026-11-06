@@ -266,6 +266,16 @@ static size_t transform_pos(const insert_log *log, size_t base_pos) {
     return base_pos + shift;
 }
 
+// Map the end of a range [start, end): an earlier insert exactly at `end`
+// lies after the range, so only inserts strictly before it shift the end.
+static size_t transform_end(const insert_log *log, size_t base_end) {
+    size_t shift = 0;
+    for (size_t i = 0; i < log->count; i++) {
+        if (log->items[i].base_pos < base_end) shift += log->items[i].len;
+    }
+    return base_end + shift;
+}
+
 // Delete [base_pos, base_pos + len) of the base version, skipping over text
 // that earlier commands inserted strictly inside the range.
 static void transformed_delete(document *doc, const insert_log *log, size_t base_pos, size_t len) {
@@ -309,7 +319,7 @@ static void apply_block_marker(document *doc, insert_log *log, size_t base, cons
 static void apply_inline_marker(document *doc, insert_log *log, size_t start, size_t end,
                                 const char *open, const char *close) {
     size_t cur_start = transform_pos(log, start);
-    size_t cur_end = transform_pos(log, end);
+    size_t cur_end = end > start ? transform_end(log, end) : cur_start;
     document_insert_text(doc, cur_start, open);
     document_insert_text(doc, cur_end + strlen(open), close);
     log_insert(log, start, strlen(open));

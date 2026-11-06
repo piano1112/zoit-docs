@@ -76,6 +76,12 @@ int main(void) {
     markdown_bold(doc, doc->version, 0, 5);
     expect("insert then bold", doc, ">> **Hello** world");
 
+    // An insert right at the end of a bold range stays outside it.
+    doc = make_doc("Hello world");
+    markdown_insert(doc, doc->version, 5, ",");
+    markdown_bold(doc, doc->version, 0, 5);
+    expect("insert at bold end stays outside", doc, "**Hello**, world");
+
     // Inserts after a bold are shifted by both of its markers.
     doc = make_doc("Hello world");
     markdown_bold(doc, doc->version, 0, 5);

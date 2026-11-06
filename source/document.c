@@ -217,117 +217,182 @@ void enqueue_command(document *doc, command *cmd) {
     }
 }
 
+/*
+ * Operational transformation (OT) for one batch of edits.
+ *
+ * Every command in a batch was written against the same document version, so
+ * its positions refer to that version (the "base"). Commands are applied in
+ * arrival order, and each applied insert is recorded with its base position.
+ * Before applying a command, its base positions are moved past the text that
+ * earlier commands in the batch inserted at or before them.
+ *
+ * Deletes only mark chunks and the marked text is removed after the whole
+ * batch, so a delete never moves later positions. Two deletes over the same
+ * text simply mark it twice. A delete whose range covers text that an earlier
+ * command inserted is split around that text, so the inserted text survives.
+ */
+typedef struct {
+    size_t base_pos; // position in the base version
+    size_t len;      // characters inserted there
+} applied_insert;
+
+typedef struct {
+    applied_insert *items;
+    size_t count;
+    size_t cap;
+} insert_log;
+
+static void log_insert(insert_log *log, size_t base_pos, size_t len) {
+    if (len == 0) return;
+    if (log->count == log->cap) {
+        size_t cap = log->cap ? log->cap * 2 : 8;
+        applied_insert *items = realloc(log->items, cap * sizeof(*items));
+        if (!items) return;
+        log->items = items;
+        log->cap = cap;
+    }
+    log->items[log->count].base_pos = base_pos;
+    log->items[log->count].len = len;
+    log->count++;
+}
+
+// Map a base position to the current position: earlier inserts at or before
+// it push it right. Ties go to the earlier command (arrival order).
+static size_t transform_pos(const insert_log *log, size_t base_pos) {
+    size_t shift = 0;
+    for (size_t i = 0; i < log->count; i++) {
+        if (log->items[i].base_pos <= base_pos) shift += log->items[i].len;
+    }
+    return base_pos + shift;
+}
+
+// Delete [base_pos, base_pos + len) of the base version, skipping over text
+// that earlier commands inserted strictly inside the range.
+static void transformed_delete(document *doc, const insert_log *log, size_t base_pos, size_t len) {
+    size_t base_end = base_pos + len;
+    size_t seg_start = base_pos;
+    while (seg_start < base_end) {
+        // next earlier insert strictly inside (seg_start, base_end)
+        size_t seg_end = base_end;
+        for (size_t i = 0; i < log->count; i++) {
+            size_t q = log->items[i].base_pos;
+            if (q > seg_start && q < seg_end) seg_end = q;
+        }
+        document_delete_range(doc, transform_pos(log, seg_start), seg_end - seg_start);
+        seg_start = seg_end;
+    }
+}
+
+// Insert a newline before `pos` unless it already starts a line.
+// Returns the number of characters inserted (0 or 1).
+static size_t ensure_line_start(document *doc, size_t pos) {
+    if (pos == 0) return 0;
+    char *read = document_read(doc, pos - 1, 1);
+    size_t added = 0;
+    if (read && read[0] != '\n') {
+        document_insert_text(doc, pos, "\n");
+        added = 1;
+    }
+    free(read);
+    return added;
+}
+
+// Insert a block marker (heading, list, quote, rule) at base position `base`.
+static void apply_block_marker(document *doc, insert_log *log, size_t base, const char *marker) {
+    size_t pos = transform_pos(log, base);
+    size_t added = ensure_line_start(doc, pos);
+    document_insert_text(doc, pos + added, marker);
+    log_insert(log, base, added + strlen(marker));
+}
+
+// Wrap base range [start, end) with an opening and closing marker.
+static void apply_inline_marker(document *doc, insert_log *log, size_t start, size_t end,
+                                const char *open, const char *close) {
+    size_t cur_start = transform_pos(log, start);
+    size_t cur_end = transform_pos(log, end);
+    document_insert_text(doc, cur_start, open);
+    document_insert_text(doc, cur_end + strlen(open), close);
+    log_insert(log, start, strlen(open));
+    log_insert(log, end, strlen(close));
+}
+
 void document_apply_edit(document *doc) {
-    // Apply the edit command to the document
+    insert_log log = {NULL, 0, 0};
+
+    // Apply the batch in arrival order, transforming each command's positions
     for (command *cmd = doc->commands; cmd; cmd = cmd->next) {
         if (cmd->reject_msg) {
             // Skip rejected commands
             continue;
         }
-        char *read = NULL;
         switch (cmd->type) {
             case INSERT:
-                document_insert_text(doc, cmd->pos, cmd->content);
+                document_insert_text(doc, transform_pos(&log, cmd->pos), cmd->content);
+                log_insert(&log, cmd->pos, strlen(cmd->content));
                 break;
             case DEL:
-                document_delete_range(doc, cmd->pos, cmd->no_char);
-                break;
-            case BOLD:
-                document_insert_text(doc, cmd->start_pos, "**");
-                document_insert_text(doc, cmd->end_pos + 2, "**");
-                break;
-            case ITALIC:
-                document_insert_text(doc, cmd->start_pos, "*");
-                document_insert_text(doc, cmd->end_pos + 1, "*");
+                transformed_delete(doc, &log, cmd->pos, cmd->no_char);
                 break;
             case NEWLINE:
-                document_insert_text(doc, cmd->pos, "\n");
+                document_insert_text(doc, transform_pos(&log, cmd->pos), "\n");
+                log_insert(&log, cmd->pos, 1);
                 break;
+            case BOLD:
+                apply_inline_marker(doc, &log, cmd->start_pos, cmd->end_pos, "**", "**");
+                break;
+            case ITALIC:
+                apply_inline_marker(doc, &log, cmd->start_pos, cmd->end_pos, "*", "*");
+                break;
+            case CODE:
+                apply_inline_marker(doc, &log, cmd->start_pos, cmd->end_pos, "`", "`");
+                break;
+            case LINK: {
+                // "[" before the text, "](url)" after it
+                size_t close_len = strlen(cmd->link) + 3;
+                char *close = malloc(close_len + 1);
+                if (!close) break;
+                snprintf(close, close_len + 1, "](%s)", cmd->link);
+                apply_inline_marker(doc, &log, cmd->start_pos, cmd->end_pos, "[", close);
+                free(close);
+                break;
+            }
             case HEADING:
-                // ensure preceding newline
-                read = NULL;
-                if (cmd->pos > 0) read = document_read(doc, cmd->pos - 1, 1);
-                if (read && read[0] != '\n') {
-                    document_insert_text(doc, cmd->pos, "\n");
-                    cmd->pos++;
-                }
-                // insert heading
                 if (cmd->level == 1) {
-                    document_insert_text(doc, cmd->pos, "# ");
+                    apply_block_marker(doc, &log, cmd->pos, "# ");
                 } else if (cmd->level == 2) {
-                    document_insert_text(doc, cmd->pos, "## ");
+                    apply_block_marker(doc, &log, cmd->pos, "## ");
                 } else if (cmd->level == 3) {
-                    document_insert_text(doc, cmd->pos, "### ");
+                    apply_block_marker(doc, &log, cmd->pos, "### ");
                 }
                 break;
             case UNORDERED_LIST:
-                // ensure preceding newline
-                read = NULL;
-                if (cmd->pos > 0) read = document_read(doc, cmd->pos - 1, 1);
-                if (read && read[0] != '\n') {
-                    document_insert_text(doc, cmd->pos, "\n");
-                    cmd->pos++;
-                }
-                // insert unordered list
-                document_insert_text(doc, cmd->pos, "- ");
+                apply_block_marker(doc, &log, cmd->pos, "- ");
                 break;
-            case ORDERED_LIST:
-                // ensure preceding newline
-                read = NULL;
-                if (cmd->pos > 0) read = document_read(doc, cmd->pos - 1, 1);
-                if (read && read[0] != '\n') {
-                    document_insert_text(doc, cmd->pos, "\n");
-                    cmd->pos++;
-                }
-                // insert ordered list
-                // format "n. "
-                int order = determine_order(doc, cmd->pos);
+            case BLOCKQUOTE:
+                apply_block_marker(doc, &log, cmd->pos, "> ");
+                break;
+            case HORIZONTAL_RULE:
+                apply_block_marker(doc, &log, cmd->pos, "---\n");
+                break;
+            case ORDERED_LIST: {
+                // format "n. " where n follows the previous list item
+                size_t pos = transform_pos(&log, cmd->pos);
+                size_t added = ensure_line_start(doc, pos);
+                int order = determine_order(doc, pos + added);
                 if (order <= 0) {
                     order = 1;
                 }
                 char order_str[16];
                 snprintf(order_str, sizeof(order_str), "%d. ", order);
-                document_insert_text(doc, cmd->pos, order_str);
+                document_insert_text(doc, pos + added, order_str);
+                log_insert(&log, cmd->pos, added + strlen(order_str));
                 break;
-            case CODE:
-                // insert code block
-                document_insert_text(doc, cmd->start_pos, "`");
-                document_insert_text(doc, cmd->end_pos + 1, "`");
-                break;
-            case HORIZONTAL_RULE:
-                // ensure preceding newline
-                read = NULL;
-                if (cmd->pos > 0) read = document_read(doc, cmd->pos - 1, 1);
-                if (read && read[0] != '\n') {
-                    document_insert_text(doc, cmd->pos, "\n");
-                    cmd->pos++;
-                }
-                // insert horizontal rule
-                document_insert_text(doc, cmd->pos, "---\n");
-                break;
-            case BLOCKQUOTE:
-                // ensure preceding newline
-                read = NULL;
-                if (cmd->pos > 0) read = document_read(doc, cmd->pos - 1, 1);
-                if (read && read[0] != '\n') {
-                    document_insert_text(doc, cmd->pos, "\n");
-                    cmd->pos++;
-                }
-                // insert blockquote
-                document_insert_text(doc, cmd->pos, "> ");
-                break;
-            case LINK:
-                // insert link
-                document_insert_text(doc, cmd->start_pos, "[");
-                document_insert_text(doc, cmd->end_pos + 1, "](");
-                // insert link URL
-                document_insert_text(doc, cmd->end_pos + 3, cmd->link);
-                document_insert_text(doc, cmd->end_pos + 3 + strlen(cmd->link), ")");
-                break;
+            }
             default:
                 break;
         }
     }
+    free(log.items);
     document_delete_marked(doc);
     // Free the command after applying
     command *next_cmd;

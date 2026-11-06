@@ -168,7 +168,11 @@ char *markdown_flatten(const document *doc) {
 void markdown_increment_version(document *doc) {
     if (!doc) return;
     document_apply_edit(doc);
-    puts(markdown_flatten(doc));
+    char *flat = markdown_flatten(doc);
+    if (flat) {
+        puts(flat);
+        free(flat);
+    }
     fflush(stdout);
 }
 

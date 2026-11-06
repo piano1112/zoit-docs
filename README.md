@@ -16,6 +16,7 @@ The **server** holds a shared markdown document in memory using a custom chunk-b
 - **Role-based access control**: Users are assigned `read` or `write` permissions via a roles file — write commands from read-only users are rejected
 - **Markdown formatting**: Insert, delete, bold, italic, headings (H1–H3), ordered/unordered lists, code spans, blockquotes, horizontal rules, and links
 - **Version tracking**: Each batch of edits increments the document version, enabling conflict detection
+- **Concurrent edit transformation (OT)**: Edits that arrive within the same interval are all written against the same version. They are applied in arrival order, and each edit's positions are shifted past text that earlier edits in the batch inserted. Deletes only mark text and are swept after the batch, so they never shift later positions, and a delete over text another client just inserted keeps that text
 - **Persistent output**: The final document is saved as `doc.md` on server shutdown
 
 ## Architecture
@@ -45,6 +46,14 @@ libs/
 ```bash
 make
 ```
+
+### Test
+
+```bash
+make test
+```
+
+Runs `tests/test_ot.c`, which checks edits made against the same version (insert/insert, insert/delete, overlapping deletes, formatting).
 
 ### Start the Server
 
